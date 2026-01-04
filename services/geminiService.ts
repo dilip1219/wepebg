@@ -1,9 +1,13 @@
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ProcessingOptions } from "../types";
 
 export const processImage = async (base64Image: string, options: ProcessingOptions): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please set VITE_API_KEY in your environment variables.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const mimeType = base64Image.match(/data:(.*?);/)?.[1] || 'image/png';
   const data = base64Image.split(',')[1];
 
@@ -19,15 +23,15 @@ export const processImage = async (base64Image: string, options: ProcessingOptio
 
   switch (options.mode) {
     case 'transparent':
-      prompt = "Please identify the main subject(s) in this image. Remove the entire background. The output MUST have a completely transparent background (alpha channel). Do not fill with any color. Keep the subject's original lighting and colors.";
+      prompt = "You are a professional image editing AI. Task: Remove the background from this image. RETURN ONLY THE MAIN SUBJECT. The background MUST be perfectly transparent (alpha channel). Do not add any background colors like white or black. Preserve all fine details of the subject edges (e.g., hair, fur). Output should be a PNG with transparency.";
       break;
     case 'white':
-      prompt = "Identify the main subject(s). Remove the entire background and replace it with a solid, pure #FFFFFF white. Ensure crisp edges.";
+      prompt = "Isolate the main subject from this image and replace the entire background with a solid, pure white (#FFFFFF) background. Ensure the edges are clean and crisp.";
       break;
     case 'preset':
     case 'custom_prompt':
       const targetBg = options.mode === 'preset' ? options.presetId : options.customBackgroundPrompt;
-      prompt = `Isolate the subject from this image and place it realistically into a new background: ${targetBg}. Match the lighting, shadows, and perspective of the new environment to make the subject feel naturally integrated.`;
+      prompt = `Isolate the subject from this image and place it realistically into this new background environment: ${targetBg}. Adjust lighting, shadows, and color balance of the subject to match the new background perfectly.`;
       break;
     case 'custom_upload':
       if (options.customBackgroundImage) {
@@ -39,38 +43,45 @@ export const processImage = async (base64Image: string, options: ProcessingOptio
             mimeType: bgMime,
           },
         });
-        prompt = "I have provided two images: the first is the source image with a subject, and the second is the target background. Please cut out the main subject from the first image and place it realistically onto the second image (the background). Adjust shadows and lighting for a perfect blend.";
+        prompt = "Task: Background replacement. I've provided two images. The first is the source image. The second is the desired background. Please cut out the subject from the first image and place it onto the second image. Harmonize lighting and shadows so it looks like a single, professional photograph.";
       } else {
         prompt = "Remove background and make it transparent.";
       }
       break;
     default:
-      prompt = "Remove background and make it transparent.";
+      prompt = "Remove the background and make it transparent.";
   }
 
   parts.push({ text: prompt });
 
-  const response: GenerateContentResponse = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: {
-      parts: parts,
-    },
-    config: {
-      temperature: 0.4,
+  try {
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: parts,
+      },
+      config: {
+        temperature: 0.1, // Lower temperature for more consistent, precise editing
+      }
+    });
+
+    const candidates = response.candidates;
+    if (!candidates || candidates.length === 0 || !candidates[0].content?.parts) {
+      throw new Error("The AI didn't return a valid response. Try again with a clearer image.");
     }
-  });
 
-  const candidates = response.candidates;
-  if (!candidates || candidates.length === 0 || !candidates[0].content?.parts) {
-    throw new Error("Failed to process image: No content returned from model.");
-  }
-
-  for (const part of candidates[0].content.parts) {
-    if (part.inlineData && part.inlineData.data) {
-      const base64EncodeString: string = part.inlineData.data;
-      return `data:image/png;base64,${base64EncodeString}`;
+    for (const part of candidates[0].content.parts) {
+      if (part.inlineData && part.inlineData.data) {
+        const base64Data: string = part.inlineData.data; // Fixed type safety
+        return `data:image/png;base64,${base64Data}`;
+      }
     }
-  }
 
-  throw new Error("No image data found in the response.");
+    throw new Error("The AI processed the image but didn't return a new one. This can happen with very complex backgrounds.");
+  } catch (error: any) {
+    if (error.message?.includes('403') || error.message?.includes('API_KEY_INVALID')) {
+      throw new Error("Invalid API Key. Please check your VITE_API_KEY setting.");
+    }
+    throw error;
+  }
 };
