@@ -1,0 +1,7 @@
+{
+  "name": "wipebg.ai - Professional Background Remover",
+  "description": "Remove image backgrounds instantly with 100% accuracy using wipebg.ai. The most effective AI tool for professional results.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
