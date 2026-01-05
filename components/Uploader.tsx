@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 
 interface UploaderProps {
@@ -36,10 +35,10 @@ const Uploader: React.FC<UploaderProps> = ({ onUpload }) => {
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={onDrop}
-      className={`relative group w-full max-w-2xl mx-auto h-80 border-2 border-dashed rounded-3xl transition-all duration-300 flex flex-col items-center justify-center cursor-pointer ${
+      className={`relative group w-full h-[450px] border-4 border-dashed rounded-[3rem] transition-all duration-300 flex flex-col items-center justify-center cursor-pointer ${
         isDragging 
-          ? 'border-indigo-500 bg-indigo-50/50' 
-          : 'border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50'
+          ? 'border-indigo-500 bg-indigo-50/50 shadow-2xl' 
+          : 'border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50 hover:shadow-xl'
       }`}
       onClick={() => fileInputRef.current?.click()}
     >
@@ -51,17 +50,19 @@ const Uploader: React.FC<UploaderProps> = ({ onUpload }) => {
         accept="image/*"
       />
       
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform duration-300">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+      <div className="flex flex-col items-center gap-8 p-10">
+        <div className="w-24 h-24 bg-indigo-100 rounded-[2rem] flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-all duration-500 shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
         </div>
-        <div className="text-center">
-          <p className="text-xl font-semibold text-slate-800">Drop your image here</p>
-          <p className="text-slate-500 mt-1">or click to browse from your computer</p>
+        <div className="text-center space-y-3">
+          <p className="text-3xl font-extrabold text-slate-900 tracking-tight">Drop your image here</p>
+          <p className="text-xl text-slate-500 font-medium">or click to browse from your device</p>
         </div>
-        <p className="text-xs text-slate-400 mt-4 uppercase tracking-widest font-medium">Supports JPG, PNG, WEBP</p>
+        <div className="flex gap-4 px-6 py-3 bg-slate-100/50 rounded-2xl">
+           <p className="text-xs text-slate-400 uppercase tracking-[0.25em] font-black">JPG • PNG • WEBP</p>
+        </div>
       </div>
     </div>
   );
